@@ -1,5 +1,10 @@
 #include <DigiCDC.h>
 //#include <stdio.h>
+#include <Adafruit_NeoPixel.h>
+
+#define INTERVAL 1000
+#define PIXEL_PIN    0  // Digital IO pin connected to the NeoPixels.
+#define PIXEL_COUNT 1  // Number of NeoPixels
 
 short int Red = 0;
 short int Green = 0;
@@ -11,19 +16,26 @@ byte ledState = LOW;             // ledState used to set the LED
 long previousMillis = 0;        // will store last time LED was updated
 byte blink=0;
 
-#define INTERVAL 1000
+// Declare our NeoPixel strip object:
+Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
+// Argument 1 = Number of pixels in NeoPixel strip
+// Argument 2 = Arduino pin number (most are valid)
+// Argument 3 = Pixel type flags, add together as needed:
+//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
+//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
+//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
+//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
+//   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 void setup() {                
   // initialize the digital pin as an output.
-    pinMode(0,OUTPUT);
-    pinMode(1,OUTPUT);
-    pinMode(2,OUTPUT);
+  strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
+  strip.show();  // Initialize all pixels to 'off'
   SerialUSB.begin(); 
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-  setBlue();
   
   //turns led on and off based on sending 0 or 1 from serial terminal
   if (SerialUSB.available()) {
@@ -105,32 +117,11 @@ void loop() {
       else
         ledState=HIGH;
     }
-    analogWrite(0,ledState == LOW?0:Red);
-    analogWrite(1,ledState == LOW?0:Green);
-     setBlue();
+
+    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
+    strip.show();                          //  Update strip to match
 
   
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
-}
-void setBlue(){
-    if((ledState == LOW)||(Blue == 0)){
-      digitalWrite(2,LOW);
-      return;
-    }
-    else if(Blue == 255){
-      digitalWrite(2,HIGH);
-      return;
-    }
-    // On period  
-    for (int x=0;x<Blue;x++){
-    digitalWrite(2,HIGH);
-    } 
-    
-    // Off period
-    
-    for(int x=0;x<(255-Blue);x++){
-    digitalWrite(2,LOW);
-    }
-  
 } 
 
