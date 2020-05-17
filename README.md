@@ -26,3 +26,6 @@ I look forward to receiving merge requests.
 
 It is possible to control the color of the LED as well as the behavior: should it shine continuously or should it blink.
 
+## Project organization
+
+The master branch has the source code for the whole thang using a simple dumb RGB led, the branch NeoPixel is aptly named - here resides the code for when you want to use a smart RGB led...
