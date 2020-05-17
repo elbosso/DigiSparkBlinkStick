@@ -53,8 +53,28 @@ void loop() {
       if(theIndex==11)
       {
         colorString[theIndex]=0;
-        int r;
-        sscanf(colorString,"%hd,%hd,%hd",&Red,&Green,&Blue);
+        byte color=0;
+        byte digit=0;
+        short int akku=0;
+        short int multiplier=100;
+        for(byte color=0;color<3;++color)
+        {
+          akku=0;
+          multiplier=100;
+          for(byte digit=0;digit<3;++digit)
+          {
+            short int number=(short int) colorString[color*4+digit] - 48;
+            akku+=multiplier*number;
+            multiplier/=10;
+          }
+          if(color==0)
+            Red=akku;
+          else if(color==1)
+            Green=akku;
+          else
+            Blue=akku;
+        }
+//        sscanf(colorString,"%hd,%hd,%hd",&Red,&Green,&Blue);
         mode=0;
         theIndex=0;
       }
