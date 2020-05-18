@@ -18,6 +18,8 @@ char colorString[12];
 byte ledState = LOW;             // ledState used to set the LED
 long previousMillis = 0;        // will store last time LED was updated
 byte blink=0;
+int repetitions=-1;
+int currentrepetition=-1;
 
 int blink_on=100;
 int blink_off=1000;
@@ -56,12 +58,15 @@ void reset()
   blink=0;
   blink_on=100;
   blink_off=1000;
+  repetitions=3;
+  currentrepetition=-1;
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
 
   command_interpreter();
+  if(mode==0)
   manage_blink();
 
 //    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
@@ -205,8 +210,17 @@ void command_interpreter()
       {
         reset();
       }
+      else if(input == 'p')
+      {
+        mode=5;
+        expectedstringlength=4;
+        theIndex=0;
+      }
       if((input == '+')||(input == '!'))
+      {
         blink=1;
+        currentrepetition=repetitions;
+      }
       else if((input == '#')||(input == '*'))
         blink=0;
       break;
@@ -267,6 +281,18 @@ void command_interpreter()
       }
       break;
     }
+    case 5:
+    {
+      colorString[theIndex]=input;
+      ++theIndex;
+      short int akku=managetimes();
+      if(akku>-1)
+      {
+        repetitions=akku;
+        currentrepetition=repetitions;
+      }
+      break;
+    }
     default:
     {
       int x = (int) input - 48;
@@ -287,29 +313,43 @@ void command_interpreter()
 }
 void manage_blink()
 {
-      unsigned long currentMillis = millis();
-    if(ledState==HIGH)
+  if(blink==1)
+  {
+    unsigned long currentMillis = millis();
+    //if(currentrepetition!=0)
     {
-      if (currentMillis - previousMillis >= blink_on) 
+      if(ledState==HIGH)
       {
-        previousMillis = currentMillis;
-        if(blink==1)
-          ledState =ledState == LOW?HIGH:LOW;
-        else
-          ledState=HIGH;
+        if (currentMillis - previousMillis >= blink_on) 
+        {
+          previousMillis = currentMillis;
+            ledState =LOW;
+        }
+      }
+      else
+      {
+        if (currentMillis - previousMillis >= blink_off) 
+        {
+          previousMillis = currentMillis;
+            ledState =currentrepetition!=0?HIGH:LOW;
+          if(currentrepetition>0)
+            --currentrepetition;
+        }
       }
     }
-    else
+/*    else
     {
-      if (currentMillis - previousMillis >= blink_off) 
+      if(ledState==HIGH)
       {
-        previousMillis = currentMillis;
-        if(blink==1)
-          ledState =ledState == LOW?HIGH:LOW;
-        else
-          ledState=HIGH;
+        if (currentMillis - previousMillis >= blink_on) 
+        {
+          previousMillis = currentMillis;
+            ledState =LOW;
+        }
       }
     }
-
+*/  }
+  else
+    ledState=HIGH;
 }
 
