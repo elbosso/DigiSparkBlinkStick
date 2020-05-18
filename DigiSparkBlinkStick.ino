@@ -289,7 +289,8 @@ void command_interpreter()
       if(akku>-1)
       {
         repetitions=akku;
-        currentrepetition=repetitions;
+        if((currentrepetition<0)||(currentrepetition>repetitions))
+          currentrepetition=repetitions;
       }
       break;
     }
