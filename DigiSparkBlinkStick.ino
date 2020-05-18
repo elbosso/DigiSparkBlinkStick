@@ -58,7 +58,7 @@ void reset()
   blink=0;
   blink_on=100;
   blink_off=1000;
-  repetitions=3;
+  repetitions=-1;
   currentrepetition=-1;
 }
 
@@ -215,6 +215,11 @@ void command_interpreter()
         mode=5;
         expectedstringlength=4;
         theIndex=0;
+      }
+      else if(input == 'u')
+      {
+        repetitions=-1;
+        currentrepetition=-1;
       }
       if((input == '+')||(input == '!'))
       {
