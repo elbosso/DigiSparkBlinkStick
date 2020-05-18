@@ -20,9 +20,13 @@ long previousMillis = 0;        // will store last time LED was updated
 byte blink=0;
 int repetitions=-1;
 int currentrepetition=-1;
+int cycles=3;
+int currentcycle=-1;
 
 int blink_on=100;
-int blink_off=1000;
+int blink_off=400;
+int cyclepause=1000;
+
 
 byte expectedstringlength;
 
@@ -57,9 +61,12 @@ void reset()
   ledState = LOW;
   blink=0;
   blink_on=100;
-  blink_off=1000;
+  blink_off=400;
   repetitions=-1;
   currentrepetition=-1;
+  cycles=3;
+  currentcycle=-1;
+  cyclepause=1000;
 }
 
 // the loop routine runs over and over again forever:
@@ -221,10 +228,22 @@ void command_interpreter()
         repetitions=-1;
         currentrepetition=-1;
       }
+      else if(input == 'P')
+      {
+        mode=6;
+        expectedstringlength=4;
+        theIndex=0;
+      }
+      else if(input == 'U')
+      {
+        cycles=-1;
+        currentcycle=-1;
+      }
       if((input == '+')||(input == '!'))
       {
         blink=1;
         currentrepetition=repetitions;
+        currentcycle=cycles;
       }
       else if((input == '#')||(input == '*'))
         blink=0;
@@ -272,6 +291,7 @@ void command_interpreter()
       if(akku>-1)
       {
         blink_on=akku;
+        mode=0;
       }
       break;
     }
@@ -283,6 +303,7 @@ void command_interpreter()
       if(akku>-1)
       {
         blink_off=akku;
+        mode=0;
       }
       break;
     }
@@ -296,6 +317,21 @@ void command_interpreter()
         repetitions=akku;
         if((currentrepetition<0)||(currentrepetition>repetitions))
           currentrepetition=repetitions;
+        mode=0;
+      }
+      break;
+    }
+    case 6:
+    {
+      colorString[theIndex]=input;
+      ++theIndex;
+      short int akku=managetimes();
+      if(akku>-1)
+      {
+        cycles=akku;
+        if((currentcycle<0)||(currentcycle>cycles))
+          currentcycle=cycles;
+        mode=0;
       }
       break;
     }
@@ -336,25 +372,45 @@ void manage_blink()
       {
         if (currentMillis - previousMillis >= blink_off) 
         {
-          previousMillis = currentMillis;
-            ledState =currentrepetition!=0?HIGH:LOW;
+          if(currentrepetition!=0)
+          {
+            previousMillis = currentMillis;
+            ledState =HIGH;
+          }
+          else
+            ledState =LOW;
           if(currentrepetition>0)
             --currentrepetition;
         }
       }
     }
-/*    else
+    if(currentrepetition==0)
+//    else
     {
       if(ledState==HIGH)
       {
-        if (currentMillis - previousMillis >= blink_on) 
+        if (currentMillis - previousMillis >= blink_off) 
         {
           previousMillis = currentMillis;
             ledState =LOW;
         }
       }
+      else
+      {
+        if(currentcycle!=0)
+        {
+          if (currentMillis - previousMillis >= cyclepause) 
+          {
+            previousMillis = currentMillis;
+              if(currentcycle>0)
+              --currentcycle;
+              if(currentcycle!=0)
+              currentrepetition=repetitions;
+          }
+        }
+      }
     }
-*/  }
+  }
   else
     ledState=HIGH;
 }
