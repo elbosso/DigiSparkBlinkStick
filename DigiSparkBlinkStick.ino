@@ -2,7 +2,6 @@
 //#include <stdio.h>
 #include <Adafruit_NeoPixel.h>
 
-#define INTERVAL 1000
 #define PIXEL_PIN    0  // Digital IO pin connected to the NeoPixels.
 #define PIXEL_COUNT 1  // Number of NeoPixels
 
@@ -15,6 +14,11 @@ char colorString[12];
 byte ledState = LOW;             // ledState used to set the LED
 long previousMillis = 0;        // will store last time LED was updated
 byte blink=0;
+
+int blink_on=100;
+int blink_off=1000;
+
+byte expectedstringlength;
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -44,8 +48,7 @@ void loop() {
     {
     case 0:
     {
-      blink=0;
-      if((input == '#')||(input == '+'))
+       if((input == '#')||(input == '+'))
       {
         mode=1;
       }
@@ -54,8 +57,22 @@ void loop() {
         mode=2;
         theIndex=0;
       }
+      else if(input == 'n')
+      {
+        mode=3;
+        expectedstringlength=4;
+        theIndex=0;
+      }
+      else if(input == 'f')
+      {
+        mode=4;
+        expectedstringlength=4;
+        theIndex=0;
+      }
       if((input == '+')||(input == '!'))
         blink=1;
+      else if((input == '#')||(input == '*'))
+        blink=0;
       break;
     }
     case 2:
@@ -92,6 +109,21 @@ void loop() {
       }
       break;
     }
+    case 3:
+    case 4:
+    {
+      colorString[theIndex]=input;
+      ++theIndex;
+      short int akku=managetimes();
+      if(akku>-1)
+      {
+        if(mode==3)
+        blink_on=akku;
+        else
+        blink_off=akku;
+      }
+      break;
+    }
     default:
     {
       int x = (int) input - 48;
@@ -109,13 +141,27 @@ void loop() {
     }
   }
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= INTERVAL) 
+    if(ledState==HIGH)
     {
-      previousMillis = currentMillis;
-      if(blink==1)
-        ledState =ledState == LOW?HIGH:LOW;
-      else
-        ledState=HIGH;
+      if (currentMillis - previousMillis >= blink_on) 
+      {
+        previousMillis = currentMillis;
+        if(blink==1)
+          ledState =ledState == LOW?HIGH:LOW;
+        else
+          ledState=HIGH;
+      }
+    }
+    else
+    {
+      if (currentMillis - previousMillis >= blink_off) 
+      {
+        previousMillis = currentMillis;
+        if(blink==1)
+          ledState =ledState == LOW?HIGH:LOW;
+        else
+          ledState=HIGH;
+      }
     }
 
     strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
@@ -124,4 +170,24 @@ void loop() {
   
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
 } 
+short int managetimes()
+{
+  short int akku=-1;
+      if(theIndex==expectedstringlength)
+      {
+        colorString[theIndex]=0;
+        byte digit=0;
+        akku=0;
+        short int multiplier=1000;
+        for(byte digit=0;digit<4;++digit)
+        {
+          short int number=(short int) colorString[digit] - 48;
+          akku+=multiplier*number;
+          multiplier/=10;
+        }
+        mode=0;
+        theIndex=0;
+      }
+      return akku;
+}
 
