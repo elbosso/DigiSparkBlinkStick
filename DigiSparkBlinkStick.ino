@@ -10,9 +10,15 @@ char colorString[12];
 byte ledState = LOW;             // ledState used to set the LED
 long previousMillis = 0;        // will store last time LED was updated
 byte blink=0;
+int repetitions=-1;
+int currentrepetition=-1;
+int cycles=3;
+int currentcycle=-1;
 
 int blink_on=100;
-int blink_off=1000;
+int blink_off=400;
+int cyclepause=1000;
+
 
 byte expectedstringlength;
 
@@ -34,14 +40,20 @@ void reset()
   ledState = LOW;
   blink=0;
   blink_on=100;
-  blink_off=1000;
+  blink_off=400;
+  repetitions=-1;
+  currentrepetition=-1;
+  cycles=3;
+  currentcycle=-1;
+  cyclepause=1000;
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
   setBlue();
   command_interpreter();
-  manage_blink();        
+  if(mode==0)
+  manage_blink();
     analogWrite(0,ledState == LOW?0:Red);
     analogWrite(1,ledState == LOW?0:Green);
      setBlue();
@@ -70,6 +82,26 @@ void setBlue(){
     }
   
 } 
+short int managetimes()
+{
+  short int akku=-1;
+      if(theIndex==expectedstringlength)
+      {
+        colorString[theIndex]=0;
+        byte digit=0;
+        akku=0;
+        short int multiplier=1000;
+        for(byte digit=0;digit<4;++digit)
+        {
+          short int number=(short int) colorString[digit] - 48;
+          akku+=multiplier*number;
+          multiplier/=10;
+        }
+        mode=0;
+        theIndex=0;
+      }
+      return akku;
+}
 void command_interpreter()
 {
     //turns led on and off based on sending 0 or 1 from serial terminal
@@ -105,8 +137,34 @@ void command_interpreter()
       {
         reset();
       }
+      else if(input == 'p')
+      {
+        mode=5;
+        expectedstringlength=4;
+        theIndex=0;
+      }
+      else if(input == 'u')
+      {
+        repetitions=-1;
+        currentrepetition=-1;
+      }
+      else if(input == 'P')
+      {
+        mode=6;
+        expectedstringlength=4;
+        theIndex=0;
+      }
+      else if(input == 'U')
+      {
+        cycles=-1;
+        currentcycle=-1;
+      }
       if((input == '+')||(input == '!'))
+      {
         blink=1;
+        currentrepetition=repetitions;
+        currentcycle=cycles;
+      }
       else if((input == '#')||(input == '*'))
         blink=0;
       break;
@@ -149,21 +207,11 @@ void command_interpreter()
     {
       colorString[theIndex]=input;
       ++theIndex;
-      if(theIndex==expectedstringlength)
+      short int akku=managetimes();
+      if(akku>-1)
       {
-        colorString[theIndex]=0;
-        byte digit=0;
-        short int akku=0;
-        short int multiplier=1000;
-        for(byte digit=0;digit<4;++digit)
-        {
-          short int number=(short int) colorString[digit] - 48;
-          akku+=multiplier*number;
-          multiplier/=10;
-        }
         blink_on=akku;
         mode=0;
-        theIndex=0;
       }
       break;
     }
@@ -171,21 +219,39 @@ void command_interpreter()
     {
       colorString[theIndex]=input;
       ++theIndex;
-      if(theIndex==expectedstringlength)
+      short int akku=managetimes();
+      if(akku>-1)
       {
-        colorString[theIndex]=0;
-        byte digit=0;
-        short int akku=0;
-        short int multiplier=1000;
-        for(byte digit=0;digit<4;++digit)
-        {
-          short int number=(short int) colorString[digit] - 48;
-          akku+=multiplier*number;
-          multiplier/=10;
-        }
         blink_off=akku;
         mode=0;
-        theIndex=0;
+      }
+      break;
+    }
+    case 5:
+    {
+      colorString[theIndex]=input;
+      ++theIndex;
+      short int akku=managetimes();
+      if(akku>-1)
+      {
+        repetitions=akku;
+        if((currentrepetition<0)||(currentrepetition>repetitions))
+          currentrepetition=repetitions;
+        mode=0;
+      }
+      break;
+    }
+    case 6:
+    {
+      colorString[theIndex]=input;
+      ++theIndex;
+      short int akku=managetimes();
+      if(akku>-1)
+      {
+        cycles=akku;
+        if((currentcycle<0)||(currentcycle>cycles))
+          currentcycle=cycles;
+        mode=0;
       }
       break;
     }
@@ -209,30 +275,63 @@ void command_interpreter()
 }
 void manage_blink()
 {
-      unsigned long currentMillis = millis();
-    if(ledState==HIGH)
+  if(blink==1)
+  {
+    unsigned long currentMillis = millis();
+    //if(currentrepetition!=0)
     {
-      if (currentMillis - previousMillis >= blink_on) 
+      if(ledState==HIGH)
       {
-        previousMillis = currentMillis;
-        if(blink==1)
-          ledState =ledState == LOW?HIGH:LOW;
-        else
-          ledState=HIGH;
+        if (currentMillis - previousMillis >= blink_on) 
+        {
+          previousMillis = currentMillis;
+            ledState =LOW;
+        }
+      }
+      else
+      {
+        if (currentMillis - previousMillis >= blink_off) 
+        {
+          if(currentrepetition!=0)
+          {
+            previousMillis = currentMillis;
+            ledState =HIGH;
+          }
+          else
+            ledState =LOW;
+          if(currentrepetition>0)
+            --currentrepetition;
+        }
       }
     }
-    else
+    if(currentrepetition==0)
+//    else
     {
-      if (currentMillis - previousMillis >= blink_off) 
+      if(ledState==HIGH)
       {
-        previousMillis = currentMillis;
-        if(blink==1)
-          ledState =ledState == LOW?HIGH:LOW;
-        else
-          ledState=HIGH;
+        if (currentMillis - previousMillis >= blink_off) 
+        {
+          previousMillis = currentMillis;
+            ledState =LOW;
+        }
+      }
+      else
+      {
+        if(currentcycle!=0)
+        {
+          if (currentMillis - previousMillis >= cyclepause) 
+          {
+            previousMillis = currentMillis;
+              if(currentcycle>0)
+              --currentcycle;
+              if(currentcycle!=0)
+              currentrepetition=repetitions;
+          }
+        }
       }
     }
-
+  }
+  else
+    ledState=HIGH;
 }
-
 
