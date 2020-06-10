@@ -34,13 +34,15 @@ elif [ "$lastpart" = "warning" ]; then
 	payload="yellow"
 elif [ "$lastpart" = "error" ]; then 
 	payload="red"
+elif [ "$lastpart" = "OFF" ]; then 
+	payload="off"
 elif [ "$lastpart" = "raw" ]; then 
 	payload="$payload"
 else
 	payload="xxxx"
 fi
 
-if [ "$payload" -ne "xxxx" ]; then 
+if [ "$payload" != "xxxx" ]; then 
 	"$SCRIPTPATH/digispark_rgb_led.sh" "$payload"
 fi
 done
