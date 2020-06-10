@@ -36,8 +36,11 @@ elif [ "$lastpart" = "error" ]; then
 	payload="red"
 elif [ "$lastpart" = "raw" ]; then 
 	payload="$payload"
+else
+	payload="xxxx"
 fi
 
-"$SCRIPTPATH/digispark_rgb_led.sh" "$payload"
-
+if [ "$payload" -ne "xxxx" ]; then 
+	"$SCRIPTPATH/digispark_rgb_led.sh" "$payload"
+fi
 done
