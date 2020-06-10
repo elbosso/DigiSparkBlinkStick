@@ -43,7 +43,8 @@ elif [ "$color" = "chartreuse" ]; then
 fi
 grep -o . <<< "$color"|while read letter;
 do 
-echo -n "$letter" >/dev/ttyACM0
+#from ls -l /dev/serial/by-id
+echo -n "$letter" >/dev/serial/by-id/usb-digistump.com_Digispark_Serial-if00
 # this line can be activated if the digispark does not seem
 # to pick up on the commands - chances are that the communication rate
 # is to fast for it then...

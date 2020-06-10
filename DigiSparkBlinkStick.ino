@@ -83,7 +83,7 @@ short int g=ledState==HIGH?Green:0;
 short int b=ledState==HIGH?Blue:0;
 if((r!=lRed)||((g!=lGreen)||(b!=lBlue)))
 {
-send(r,g,b);
+send(g,r,b);
 lRed=r;
 lGreen=g;
 lBlue=b;
