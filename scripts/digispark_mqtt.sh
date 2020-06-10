@@ -34,7 +34,7 @@ elif [ "$lastpart" = "warning" ]; then
 	payload="yellow"
 elif [ "$lastpart" = "error" ]; then 
 	payload="red"
-else
+elif [ "$lastpart" = "raw" ]; then 
 	payload="$payload"
 fi
 
