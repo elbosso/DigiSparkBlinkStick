@@ -5,9 +5,10 @@ SCRIPT=$(readlink -f "$0")
 # Absolute path this script is in. /home/user/bin
 SCRIPTPATH=$(dirname "$SCRIPT")
 
-host=192.168.10.2
+host=mqtt.pi-docker.lab
 port=1883
-topicpattern=home/#
+topicpattern=home/blinkstick/#
+
 
 while :
 do
@@ -33,7 +34,7 @@ elif [ "$lastpart" = "warning" ]; then
 	payload="yellow"
 elif [ "$lastpart" = "error" ]; then 
 	payload="red"
-elif [ "$lastpart" = "blah" ]; then 
+else
 	payload="$payload"
 fi
 
