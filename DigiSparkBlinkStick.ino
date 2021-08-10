@@ -4,13 +4,12 @@
 
 //#define PIXEL_PIN    0  // Digital IO pin connected to the NeoPixels.
 #define PIXEL_COUNT 12  // Number of NeoPixels
+#define RED 0
+#define GREEN 1
+#define BLUE 2
 
-short int Red = 0;
-short int Green = 0;
-short int Blue = 20;
-short int lRed = 0;
-short int lGreen = 0;
-short int lBlue = 0;
+short int pixel[3];
+short int colors[3][PIXEL_COUNT];
 
 byte theIndex=0;
 byte mode=0;
@@ -18,14 +17,14 @@ char colorString[12];
 byte ledState = LOW;             // ledState used to set the LED
 long previousMillis = 0;        // will store last time LED was updated
 byte blink=0;
-int repetitions=-1;
-int currentrepetition=-1;
-int cycles=3;
-int currentcycle=-1;
+short int repetitions=-1;
+short int currentrepetition=-1;
+short int cycles=3;
+short int currentcycle=-1;
 
-int blink_on=100;
-int blink_off=400;
-int cyclepause=1000;
+short int blink_on=100;
+short int blink_off=400;
+short int cyclepause=1000;
 
 
 byte expectedstringlength;
@@ -42,6 +41,14 @@ byte expectedstringlength;
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 void setup() { 
+  for(int j=0;j<PIXEL_COUNT;++j)
+  {
+    pixel[j]=0;
+    for(int i=0;i<PIXEL_COUNT;++i)
+    {
+      colors[j][i]=0;
+    }
+  }
   DDRB=0b00000001;
   //strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
   //strip.show();  // Initialize all pixels to 'off'
@@ -50,12 +57,14 @@ void setup() {
 
 void reset()
 {
-  Red = 0;
-  Green = 0;
-  Blue = 20;
-  lRed = 0;
-  lGreen = 0;
-  lBlue = 0;
+  for(int j=0;j<PIXEL_COUNT;++j)
+  {
+    pixel[j]=0;
+    for(int i=0;i<PIXEL_COUNT;++i)
+    {
+      colors[j][i]=0;
+    }
+  }
   theIndex=0;
   mode=0;
   ledState = LOW;
@@ -78,39 +87,47 @@ void loop() {
 
 //    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
 //    strip.show();     //  Update strip to match
-short int r=ledState==HIGH?Red:0;
-short int g=ledState==HIGH?Green:0;
-short int b=ledState==HIGH?Blue:0;
-if((r!=lRed)||((g!=lGreen)||(b!=lBlue)))
-{
+  short int c[3][PIXEL_COUNT];
+  short int doit=0;
   for(int i=0;i<PIXEL_COUNT;++i)
-send(r,g,b);
-lRed=r;
-lGreen=g;
-lBlue=b;
-}
+  {
+
+    byte a=((blink==0)&&(ledState==HIGH))||((blink==1)&&((ledState==HIGH)&&(i%2==0))||((ledState==LOW)&&(i%2==1)));
+    for(int j=0;j<3;++j)
+      c[j][i]=a?pixel[j]:0;
+    if((c[RED][i]!=colors[RED][i])||((c[GREEN][i]!=colors[GREEN][i])||(c[BLUE][i]!=colors[BLUE][i])))
+      doit=1;
+  }
+  if(doit==1)
+  {
+    for(int i=0;i<PIXEL_COUNT;++i)
+    {
+      send(c[RED][i],c[GREEN][i],c[BLUE][i]);
+      for(int j=0;j<3;++j)
+        colors[j][i]=c[j][i];
+    }
+  }
   
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
 } 
 short int managetimes()
 {
   short int akku=-1;
-      if(theIndex==expectedstringlength)
-      {
-        colorString[theIndex]=0;
-        byte digit=0;
-        akku=0;
-        short int multiplier=1000;
-        for(byte digit=0;digit<4;++digit)
-        {
-          short int number=(short int) colorString[digit] - 48;
-          akku+=multiplier*number;
-          multiplier/=10;
-        }
-        mode=0;
-        theIndex=0;
-      }
-      return akku;
+  if(theIndex==expectedstringlength)
+  {
+    colorString[theIndex]=0;
+    akku=0;
+    short int multiplier=1000;
+    for(byte digit=0;digit<4;++digit)
+    {
+      short int number=(short int) colorString[digit] - 48;
+      akku+=multiplier*number;
+      multiplier/=10;
+    }
+    mode=0;
+    theIndex=0;
+  }
+  return akku;
 }
 //https://forum.arduino.cc/index.php?topic=531302.0
 //http://shallowsky.com/blog/hardware/attiny85-c.html
@@ -257,8 +274,6 @@ void command_interpreter()
       if(theIndex==expectedstringlength)
       {
         colorString[theIndex]=0;
-        byte color=0;
-        byte digit=0;
         short int akku=0;
         short int multiplier=100;
         for(byte color=0;color<3;++color)
@@ -271,12 +286,7 @@ void command_interpreter()
             akku+=multiplier*number;
             multiplier/=10;
           }
-          if(color==0)
-            Red=akku;
-          else if(color==1)
-            Green=akku;
-          else
-            Blue=akku;
+          pixel[color]=akku;
         }
 //        sscanf(colorString,"%hd,%hd,%hd",&Red,&Green,&Blue);
         mode=0;
@@ -339,15 +349,14 @@ void command_interpreter()
     default:
     {
       int x = (int) input - 48;
-      Red=0;
-      Green=0;
-      Blue=0;
+      for(int j=0;j<3;++j)
+        pixel[j]=0;
       if(x&0x1)
-        Red=255;
+        pixel[RED]=255;
       if(x&0x2)
-        Green=255;
+        pixel[GREEN]=255;
       if(x&0x4)
-        Blue=255;
+        pixel[BLUE]=255;
       mode=0;
     }
     }
@@ -369,20 +378,17 @@ void manage_blink()
             ledState =LOW;
         }
       }
-      else
+      else if (currentMillis - previousMillis >= blink_off) 
       {
-        if (currentMillis - previousMillis >= blink_off) 
+        if(currentrepetition!=0)
         {
-          if(currentrepetition!=0)
-          {
-            previousMillis = currentMillis;
-            ledState =HIGH;
-          }
-          else
-            ledState =LOW;
-          if(currentrepetition>0)
-            --currentrepetition;
+          previousMillis = currentMillis;
+          ledState =HIGH;
         }
+        else
+          ledState =LOW;
+        if(currentrepetition>0)
+          --currentrepetition;
       }
     }
     if(currentrepetition==0)
@@ -396,18 +402,15 @@ void manage_blink()
             ledState =LOW;
         }
       }
-      else
+      else if(currentcycle!=0)
       {
-        if(currentcycle!=0)
+        if (currentMillis - previousMillis >= cyclepause) 
         {
-          if (currentMillis - previousMillis >= cyclepause) 
-          {
-            previousMillis = currentMillis;
-              if(currentcycle>0)
-              --currentcycle;
-              if(currentcycle!=0)
-              currentrepetition=repetitions;
-          }
+          previousMillis = currentMillis;
+            if(currentcycle>0)
+            --currentcycle;
+            if(currentcycle!=0)
+            currentrepetition=repetitions;
         }
       }
     }
