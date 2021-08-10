@@ -3,7 +3,7 @@
 //#include <Adafruit_NeoPixel.h>
 
 //#define PIXEL_PIN    0  // Digital IO pin connected to the NeoPixels.
-#define PIXEL_COUNT 1  // Number of NeoPixels
+#define PIXEL_COUNT 12  // Number of NeoPixels
 
 short int Red = 0;
 short int Green = 0;
@@ -83,6 +83,7 @@ short int g=ledState==HIGH?Green:0;
 short int b=ledState==HIGH?Blue:0;
 if((r!=lRed)||((g!=lGreen)||(b!=lBlue)))
 {
+  for(int i=0;i<PIXEL_COUNT;++i)
 send(r,g,b);
 lRed=r;
 lGreen=g;
