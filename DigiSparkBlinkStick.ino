@@ -27,6 +27,11 @@ int blink_on=100;
 int blink_off=400;
 int cyclepause=1000;
 
+byte cycle=0;
+
+short int spdr,spdg,spdb;
+short int offr,offg,offb;
+
 
 byte expectedstringlength;
 
@@ -46,6 +51,10 @@ void setup() {
   //strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
   //strip.show();  // Initialize all pixels to 'off'
   SerialUSB.begin(); 
+  // assign random speed to each spot
+  offr=3;
+  offg=5;
+  offb=7;
 }
 
 void reset()
@@ -67,6 +76,7 @@ void reset()
   cycles=3;
   currentcycle=-1;
   cyclepause=1000;
+  cycle=0;
 }
 
 // the loop routine runs over and over again forever:
@@ -74,21 +84,65 @@ void loop() {
 
   command_interpreter();
   if(mode==0)
-  manage_blink();
+    manage_blink();
 
-//    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
-//    strip.show();     //  Update strip to match
-short int r=ledState==HIGH?Red:0;
-short int g=ledState==HIGH?Green:0;
-short int b=ledState==HIGH?Blue:0;
-if((r!=lRed)||((g!=lGreen)||(b!=lBlue)))
-{
-send(g,r,b);
-lRed=r;
-lGreen=g;
-lBlue=b;
-}
-  
+  if(cycle==1)
+  {
+     unsigned long currentMillis = millis();
+     if (currentMillis - previousMillis >= blink_on)
+     { 
+      send(spdr,spdg,spdb);
+      spdr+=offr;
+      if(spdr>255)
+       {
+        spdr=255;
+        offr=-offr;
+       }
+       else if(spdr<0)
+       {
+        spdr=0;
+        offr=-offr;
+       }
+      spdg+=offg;
+      if(spdg>255)
+       {
+        spdg=255;
+        offg=-offg;
+       }
+       else if(spdg<0)
+       {
+        spdg=0;
+        offg=-offg;
+       }
+      spdb+=offb;
+      if(spdb>255)
+       {
+        spdb=255;
+        offb=-offb;
+       }
+       else if(spdb<0)
+       {
+        spdb=0;
+        offb=-offb;
+       }
+      previousMillis=currentMillis;
+     }
+  }
+  else
+  {
+    //    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
+    //    strip.show();     //  Update strip to match
+    short int r=ledState==HIGH?Red:0;
+    short int g=ledState==HIGH?Green:0;
+    short int b=ledState==HIGH?Blue:0;
+    if((r!=lRed)||((g!=lGreen)||(b!=lBlue)))
+    {
+      send(r,g,b);
+      lRed=r;
+      lGreen=g;
+      lBlue=b;
+    }
+  }  
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
 } 
 short int managetimes()
@@ -193,22 +247,26 @@ void command_interpreter()
     {
       if((input == '#')||(input == '+'))
       {
+        cycle=0;
         mode=1;
       }
       else if((input == '*')||(input == '!'))
       {
+        cycle=0;
         mode=2;
         expectedstringlength=11;
         theIndex=0;
       }
       else if(input == 'n')
       {
+        cycle=0;
         mode=3;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'f')
       {
+        cycle=0;
         mode=4;
         expectedstringlength=4;
         theIndex=0;
@@ -217,36 +275,48 @@ void command_interpreter()
       {
         reset();
       }
+      else if(input == 'c')
+      {
+        cycle=1;
+      }
       else if(input == 'p')
       {
+        cycle=0;
         mode=5;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'u')
       {
+        cycle=0;
         repetitions=-1;
         currentrepetition=-1;
       }
       else if(input == 'P')
       {
+        cycle=0;
         mode=6;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'U')
       {
+        cycle=0;
         cycles=-1;
         currentcycle=-1;
       }
       if((input == '+')||(input == '!'))
       {
+        cycle=0;
         blink=1;
         currentrepetition=repetitions;
         currentcycle=cycles;
       }
       else if((input == '#')||(input == '*'))
+      {
+        cycle=0;
         blink=0;
+      }
       break;
     }
     case 2:
