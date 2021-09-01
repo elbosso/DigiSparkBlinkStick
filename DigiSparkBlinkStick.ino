@@ -20,6 +20,12 @@ int blink_off=400;
 int cyclepause=1000;
 
 
+byte cycle=0;
+
+short int spdr,spdg,spdb;
+short int offr,offg,offb;
+
+
 byte expectedstringlength;
 
 void setup() {                
@@ -28,6 +34,10 @@ void setup() {
     pinMode(1,OUTPUT);
     pinMode(2,OUTPUT);
   SerialUSB.begin(); 
+  // assign random speed to each spot
+  offr=3;
+  offg=5;
+  offb=7;
 }
 
 void reset()
@@ -46,6 +56,7 @@ void reset()
   cycles=3;
   currentcycle=-1;
   cyclepause=1000;
+  cycle=0;
 }
 
 // the loop routine runs over and over again forever:
@@ -54,8 +65,57 @@ void loop() {
   command_interpreter();
   if(mode==0)
   manage_blink();
+
+    if(cycle==1)
+  {
+     unsigned long currentMillis = millis();
+     if (currentMillis - previousMillis >= blink_on)
+     { 
+      Red=spdr;
+      Green=spdg;
+      Blue=spdb;
+      spdr+=offr;
+      if(spdr>255)
+       {
+        spdr=255;
+        offr=-offr;
+       }
+       else if(spdr<0)
+       {
+        spdr=0;
+        offr=-offr;
+       }
+      spdg+=offg;
+      if(spdg>255)
+       {
+        spdg=255;
+        offg=-offg;
+       }
+       else if(spdg<0)
+       {
+        spdg=0;
+        offg=-offg;
+       }
+      spdb+=offb;
+      if(spdb>255)
+       {
+        spdb=255;
+        offb=-offb;
+       }
+       else if(spdb<0)
+       {
+        spdb=0;
+        offb=-offb;
+       }
+      previousMillis=currentMillis;
+     }
+  }
+  else
+  {
+
     analogWrite(0,ledState == LOW?0:Red);
     analogWrite(1,ledState == LOW?0:Green);
+  }
      setBlue();
 
   
@@ -113,25 +173,33 @@ void command_interpreter()
     {
       if((input == '#')||(input == '+'))
       {
+        cycle=0;
         mode=1;
       }
       else if((input == '*')||(input == '!'))
       {
+        cycle=0;
         mode=2;
         expectedstringlength=11;
         theIndex=0;
       }
       else if(input == 'n')
       {
+        cycle=0;
         mode=3;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'f')
       {
+        cycle=0;
         mode=4;
         expectedstringlength=4;
         theIndex=0;
+      }
+      else if(input == 'c')
+      {
+        cycle=1;
       }
       else if(input == 'r')
       {
@@ -139,34 +207,42 @@ void command_interpreter()
       }
       else if(input == 'p')
       {
+        cycle=0;
         mode=5;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'u')
       {
+        cycle=0;
         repetitions=-1;
         currentrepetition=-1;
       }
       else if(input == 'P')
       {
+        cycle=0;
         mode=6;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'U')
       {
+        cycle=0;
         cycles=-1;
         currentcycle=-1;
       }
       if((input == '+')||(input == '!'))
       {
+        cycle=0;
         blink=1;
         currentrepetition=repetitions;
         currentcycle=cycles;
       }
       else if((input == '#')||(input == '*'))
+      {
+        cycle=0;
         blink=0;
+      }
       break;
     }
     case 2:
