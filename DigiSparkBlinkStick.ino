@@ -29,8 +29,8 @@ short int cyclepause=1000;
 byte cycle=0;
 byte lastcycle=0;
 
-short int spd[3];
 short int off[3];
+short int spd[3];
 
 byte expectedstringlength;
 
@@ -94,6 +94,7 @@ void loop() {
   if(mode==0)
   manage_blink();
 
+    short int c[3][PIXEL_COUNT];
   if((cycle==1)||(lastcycle==1))
   {
     if(cycle==0)
@@ -110,14 +111,27 @@ void loop() {
      { 
     for(int i=0;i<PIXEL_COUNT;++i)
     {
-      send(spd[RED],spd[GREEN],spd[BLUE]);
+      short int a=((i*(360/12)+spd[RED])%360)/(360/12);
+      short int col=0;
+      if(a>3)
+      {
+        if(a<8)
+        {
+          col=255;//-(7-a)*50;
+        }
+        else
+        {
+          col=55;//+(11-a)*50;
+        }
+      }
+      send(col,0,0);
     }
       for(byte i=0;i<3;++i)
       {
         spd[i]+=off[i];
-        if(spd[i]>255)
+        if(spd[i]>360)
          {
-          spd[i]=255;
+          spd[i]=360;
           off[i]=-off[i];
          }
          else if(spd[i]<0)
@@ -133,7 +147,6 @@ void loop() {
   }
   else
   {
-    short int c[3][PIXEL_COUNT];
     short int doit=0;
     for(int i=0;i<PIXEL_COUNT;++i)
     {
@@ -255,28 +268,26 @@ void command_interpreter()
     {
     case 0:
     {
+      if((input!='c')&&(input!='r'))
+        cycle=0;
       if((input == '#')||(input == '+'))
       {
-        cycle=0;
         mode=1;
       }
       else if((input == '*')||(input == '!'))
       {
-         cycle=0;
        mode=2;
         expectedstringlength=11;
         theIndex=0;
       }
       else if(input == 'n')
       {
-         cycle=0;
        mode=3;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'f')
       {
-         cycle=0;
        mode=4;
         expectedstringlength=4;
         theIndex=0;
@@ -291,40 +302,34 @@ void command_interpreter()
       }
       else if(input == 'p')
       {
-        cycle=0;
         mode=5;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'u')
       {
-        cycle=0;
         repetitions=-1;
         currentrepetition=-1;
       }
       else if(input == 'P')
       {
-         cycle=0;
        mode=6;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'U')
       {
-         cycle=0;
        cycles=-1;
         currentcycle=-1;
       }
       if((input == '+')||(input == '!'))
       {
-         cycle=0;
        blink=1;
         currentrepetition=repetitions;
         currentcycle=cycles;
       }
       else if((input == '#')||(input == '*'))
       {
-        cycle=0;
         blink=0;
       }
       break;
@@ -356,18 +361,7 @@ void command_interpreter()
       }
       break;
     }
-    case 3:
-    {
-      colorString[theIndex]=input;
-      ++theIndex;
-      short int akku=managetimes();
-      if(akku>-1)
-      {
-        blink_on=akku;
-        mode=0;
-      }
-      break;
-    }
+    case 3://blink_on=akku;
     case 4:
     {
       colorString[theIndex]=input;
@@ -375,6 +369,9 @@ void command_interpreter()
       short int akku=managetimes();
       if(akku>-1)
       {
+        if(mode==3)
+          blink_on=akku;
+        else 
         blink_off=akku;
         mode=0;
       }
