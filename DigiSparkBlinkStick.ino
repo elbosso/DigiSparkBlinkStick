@@ -5,12 +5,12 @@
 //#define PIXEL_PIN    0  // Digital IO pin connected to the NeoPixels.
 #define PIXEL_COUNT 1  // Number of NeoPixels
 
-short int Red = 0;
-short int Green = 0;
-short int Blue = 20;
-short int lRed = 0;
-short int lGreen = 0;
-short int lBlue = 0;
+#define RED 0
+#define GREEN 1
+#define BLUE 2
+
+short int pixel[3];
+short int colors[3][PIXEL_COUNT];
 
 byte theIndex=0;
 byte mode=0;
@@ -28,9 +28,10 @@ int blink_off=400;
 int cyclepause=1000;
 
 byte cycle=0;
+byte lastcycle=0;
 
-short int spdr,spdg,spdb;
-short int offr,offg,offb;
+short int spd[3];
+short int off[3];
 
 
 byte expectedstringlength;
@@ -47,24 +48,35 @@ byte expectedstringlength;
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 void setup() { 
+  for(int j=0;j<PIXEL_COUNT;++j)
+  {
+    pixel[j]=0;
+    for(int i=0;i<PIXEL_COUNT;++i)
+    {
+      colors[j][i]=0;
+    }
+  }
   DDRB=0b00000001;
   //strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
   //strip.show();  // Initialize all pixels to 'off'
   SerialUSB.begin(); 
   // assign random speed to each spot
-  offr=3;
-  offg=5;
-  offb=7;
+  off[RED]=3;
+  off[GREEN]=5;
+  off[BLUE]=7;
+
 }
 
 void reset()
 {
-  Red = 0;
-  Green = 0;
-  Blue = 20;
-  lRed = 0;
-  lGreen = 0;
-  lBlue = 0;
+  for(int j=0;j<PIXEL_COUNT;++j)
+  {
+    pixel[j]=0;
+    for(int i=0;i<PIXEL_COUNT;++i)
+    {
+      colors[j][i]=0;
+    }
+  }
   theIndex=0;
   mode=0;
   ledState = LOW;
@@ -86,61 +98,56 @@ void loop() {
   if(mode==0)
     manage_blink();
 
-  if(cycle==1)
+  if((cycle==1)||(lastcycle==1))
   {
+    if(cycle==0)
+      send(0,0,0);
+    else
+    {
      unsigned long currentMillis = millis();
      if (currentMillis - previousMillis >= blink_on)
      { 
-      send(spdr,spdg,spdb);
-      spdr+=offr;
-      if(spdr>255)
-       {
-        spdr=255;
-        offr=-offr;
-       }
-       else if(spdr<0)
-       {
-        spdr=0;
-        offr=-offr;
-       }
-      spdg+=offg;
-      if(spdg>255)
-       {
-        spdg=255;
-        offg=-offg;
-       }
-       else if(spdg<0)
-       {
-        spdg=0;
-        offg=-offg;
-       }
-      spdb+=offb;
-      if(spdb>255)
-       {
-        spdb=255;
-        offb=-offb;
-       }
-       else if(spdb<0)
-       {
-        spdb=0;
-        offb=-offb;
-       }
+      send(spd[RED],spd[GREEN],spd[BLUE]);
+      for(byte i=0;i<3;++i)
+      {
+        spd[i]+=off[i];
+        if(spd[i]>255)
+         {
+          spd[i]=255;
+          off[i]=-off[i];
+         }
+         else if(spd[i]<0)
+         {
+          spd[i]=0;
+          off[i]=-off[i];
+         }
+      }
       previousMillis=currentMillis;
      }
+      }
+    lastcycle=cycle;
   }
   else
   {
-    //    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
-    //    strip.show();     //  Update strip to match
-    short int r=ledState==HIGH?Red:0;
-    short int g=ledState==HIGH?Green:0;
-    short int b=ledState==HIGH?Blue:0;
-    if((r!=lRed)||((g!=lGreen)||(b!=lBlue)))
+    short int c[3][PIXEL_COUNT];
+    short int doit=0;
+    for(int i=0;i<PIXEL_COUNT;++i)
     {
-      send(r,g,b);
-      lRed=r;
-      lGreen=g;
-      lBlue=b;
+  
+      byte a=((blink==0)&&(ledState==HIGH))||((blink==1)&&((ledState==HIGH)&&(i%2==0))||((ledState==LOW)&&(i%2==1)));
+      for(int j=0;j<3;++j)
+        c[j][i]=a?pixel[j]:0;
+      if((c[RED][i]!=colors[RED][i])||((c[GREEN][i]!=colors[GREEN][i])||(c[BLUE][i]!=colors[BLUE][i])))
+        doit=1;
+    }
+    if(doit==1)
+    {
+      for(int i=0;i<PIXEL_COUNT;++i)
+      {
+        send(c[RED][i],c[GREEN][i],c[BLUE][i]);
+        for(int j=0;j<3;++j)
+          colors[j][i]=c[j][i];
+      }
     }
   }  
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
@@ -224,11 +231,11 @@ void send (uint8_t red, uint8_t grn, uint8_t blu)
     uint8_t x;
     x = 8;
     while (x--) {
-        ((1UL << x) & grn) ? send1() : send0();
+        ((1UL << x) & red) ? send1() : send0();
     }
     x = 8;
     while (x--) {
-        ((1UL << x) & red) ? send1() : send0();
+        ((1UL << x) & grn) ? send1() : send0();
     }
     x = 8;
     while (x--) {
@@ -330,23 +337,18 @@ void command_interpreter()
         byte digit=0;
         short int akku=0;
         short int multiplier=100;
-        for(byte color=0;color<3;++color)
-        {
-          akku=0;
-          multiplier=100;
-          for(byte digit=0;digit<3;++digit)
+          for(byte color=0;color<3;++color)
           {
-            short int number=(short int) colorString[color*4+digit] - 48;
-            akku+=multiplier*number;
-            multiplier/=10;
+            akku=0;
+            multiplier=100;
+            for(byte digit=0;digit<3;++digit)
+            {
+              short int number=(short int) colorString[color*4+digit] - 48;
+              akku+=multiplier*number;
+              multiplier/=10;
+            }
+            pixel[color]=akku;
           }
-          if(color==0)
-            Red=akku;
-          else if(color==1)
-            Green=akku;
-          else
-            Blue=akku;
-        }
 //        sscanf(colorString,"%hd,%hd,%hd",&Red,&Green,&Blue);
         mode=0;
         theIndex=0;
@@ -408,15 +410,14 @@ void command_interpreter()
     default:
     {
       int x = (int) input - 48;
-      Red=0;
-      Green=0;
-      Blue=0;
+      for(int j=0;j<3;++j)
+        pixel[j]=0;
       if(x&0x1)
-        Red=255;
+        pixel[RED]=255;
       if(x&0x2)
-        Green=255;
+        pixel[GREEN]=255;
       if(x&0x4)
-        Blue=255;
+        pixel[BLUE]=255;
       mode=0;
     }
     }
