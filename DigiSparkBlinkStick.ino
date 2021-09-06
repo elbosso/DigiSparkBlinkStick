@@ -26,6 +26,11 @@ short int blink_on=100;
 short int blink_off=400;
 short int cyclepause=1000;
 
+byte cycle=0;
+byte lastcycle=0;
+
+short int spd[3];
+short int off[3];
 
 byte expectedstringlength;
 
@@ -53,6 +58,10 @@ void setup() {
   //strip.begin(); // Initialize NeoPixel strip object (REQUIRED)
   //strip.show();  // Initialize all pixels to 'off'
   SerialUSB.begin(); 
+    off[RED]=3;
+  off[GREEN]=5;
+  off[BLUE]=7;
+
 }
 
 void reset()
@@ -85,29 +94,66 @@ void loop() {
   if(mode==0)
   manage_blink();
 
-//    strip.setPixelColor(0, ledState==HIGH?strip.Color(  Red,Green,Blue):strip.Color(0,0,0));         //  Set pixel's color (in RAM)
-//    strip.show();     //  Update strip to match
-  short int c[3][PIXEL_COUNT];
-  short int doit=0;
-  for(int i=0;i<PIXEL_COUNT;++i)
+  if((cycle==1)||(lastcycle==1))
   {
-
-    byte a=((blink==0)&&(ledState==HIGH))||((blink==1)&&((ledState==HIGH)&&(i%2==0))||((ledState==LOW)&&(i%2==1)));
-    for(int j=0;j<3;++j)
-      c[j][i]=a?pixel[j]:0;
-    if((c[RED][i]!=colors[RED][i])||((c[GREEN][i]!=colors[GREEN][i])||(c[BLUE][i]!=colors[BLUE][i])))
-      doit=1;
-  }
-  if(doit==1)
-  {
+    if(cycle==0)
+    {
+      for(int i=0;i<PIXEL_COUNT;++i)
+      {
+        send(0,0,0);
+      }
+    }
+      else
+      {
+     unsigned long currentMillis = millis();
+     if (currentMillis - previousMillis >= blink_on)
+     { 
     for(int i=0;i<PIXEL_COUNT;++i)
     {
-      send(c[RED][i],c[GREEN][i],c[BLUE][i]);
-      for(int j=0;j<3;++j)
-        colors[j][i]=c[j][i];
+      send(spd[RED],spd[GREEN],spd[BLUE]);
     }
+      for(byte i=0;i<3;++i)
+      {
+        spd[i]+=off[i];
+        if(spd[i]>255)
+         {
+          spd[i]=255;
+          off[i]=-off[i];
+         }
+         else if(spd[i]<0)
+         {
+          spd[i]=0;
+          off[i]=-off[i];
+         }
+      }
+      previousMillis=currentMillis;
+     }
+      }
+    lastcycle=cycle;
   }
+  else
+  {
+    short int c[3][PIXEL_COUNT];
+    short int doit=0;
+    for(int i=0;i<PIXEL_COUNT;++i)
+    {
   
+      byte a=((blink==0)&&(ledState==HIGH))||((blink==1)&&((ledState==HIGH)&&(i%2==0))||((ledState==LOW)&&(i%2==1)));
+      for(int j=0;j<3;++j)
+        c[j][i]=a?pixel[j]:0;
+      if((c[RED][i]!=colors[RED][i])||((c[GREEN][i]!=colors[GREEN][i])||(c[BLUE][i]!=colors[BLUE][i])))
+        doit=1;
+    }
+    if(doit==1)
+    {
+      for(int i=0;i<PIXEL_COUNT;++i)
+      {
+        send(c[RED][i],c[GREEN][i],c[BLUE][i]);
+        for(int j=0;j<3;++j)
+          colors[j][i]=c[j][i];
+      }
+    }
+  }  
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
 } 
 short int managetimes()
@@ -211,23 +257,27 @@ void command_interpreter()
     {
       if((input == '#')||(input == '+'))
       {
+        cycle=0;
         mode=1;
       }
       else if((input == '*')||(input == '!'))
       {
-        mode=2;
+         cycle=0;
+       mode=2;
         expectedstringlength=11;
         theIndex=0;
       }
       else if(input == 'n')
       {
-        mode=3;
+         cycle=0;
+       mode=3;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'f')
       {
-        mode=4;
+         cycle=0;
+       mode=4;
         expectedstringlength=4;
         theIndex=0;
       }
@@ -235,36 +285,48 @@ void command_interpreter()
       {
         reset();
       }
+      else if(input == 'c')
+      {
+        cycle=1;
+      }
       else if(input == 'p')
       {
+        cycle=0;
         mode=5;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'u')
       {
+        cycle=0;
         repetitions=-1;
         currentrepetition=-1;
       }
       else if(input == 'P')
       {
-        mode=6;
+         cycle=0;
+       mode=6;
         expectedstringlength=4;
         theIndex=0;
       }
       else if(input == 'U')
       {
-        cycles=-1;
+         cycle=0;
+       cycles=-1;
         currentcycle=-1;
       }
       if((input == '+')||(input == '!'))
       {
-        blink=1;
+         cycle=0;
+       blink=1;
         currentrepetition=repetitions;
         currentcycle=cycles;
       }
       else if((input == '#')||(input == '*'))
+      {
+        cycle=0;
         blink=0;
+      }
       break;
     }
     case 2:
