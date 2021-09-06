@@ -340,10 +340,6 @@ void command_interpreter()
         byte digit=0;
         short int akku=0;
         short int multiplier=100;
-        for(byte color=0;color<3;++color)
-        {
-          akku=0;
-          multiplier=100;
           for(byte color=0;color<3;++color)
           {
             akku=0;
@@ -355,7 +351,6 @@ void command_interpreter()
               multiplier/=10;
             }
             pixel[color]=akku;
-          }
         }
 //        sscanf(colorString,"%hd,%hd,%hd",&Red,&Green,&Blue);
         mode=0;
