@@ -1,6 +1,11 @@
 
 #include <DigiCDC.h>
 
+#define RED 0
+#define GREEN 1
+#define BLUE 2
+
+
 short int Red = 0;
 short int Green = 0;
 short int Blue = 20;
@@ -21,9 +26,11 @@ int cyclepause=1000;
 
 
 byte cycle=0;
+byte lastcycle=0;
 
-short int spdr,spdg,spdb;
-short int offr,offg,offb;
+short int spd[3];
+short int off[3];
+
 
 
 byte expectedstringlength;
@@ -35,9 +42,9 @@ void setup() {
     pinMode(2,OUTPUT);
   SerialUSB.begin(); 
   // assign random speed to each spot
-  offr=3;
-  offg=5;
-  offb=7;
+  off[RED]=3;
+  off[GREEN]=5;
+  off[BLUE]=7;
 }
 
 void reset()
@@ -66,49 +73,41 @@ void loop() {
   if(mode==0)
   manage_blink();
 
-    if(cycle==1)
+    if((cycle==1)||(lastcycle==1))
   {
+    if(cycle==0)
+    {
+      Red=0;
+      Green=0;
+      Blue=0;
+    }
+      else
+      {
      unsigned long currentMillis = millis();
      if (currentMillis - previousMillis >= blink_on)
      { 
-      Red=spdr;
-      Green=spdg;
-      Blue=spdb;
-      spdr+=offr;
-      if(spdr>255)
-       {
-        spdr=255;
-        offr=-offr;
-       }
-       else if(spdr<0)
-       {
-        spdr=0;
-        offr=-offr;
-       }
-      spdg+=offg;
-      if(spdg>255)
-       {
-        spdg=255;
-        offg=-offg;
-       }
-       else if(spdg<0)
-       {
-        spdg=0;
-        offg=-offg;
-       }
-      spdb+=offb;
-      if(spdb>255)
-       {
-        spdb=255;
-        offb=-offb;
-       }
-       else if(spdb<0)
-       {
-        spdb=0;
-        offb=-offb;
-       }
+      Red=spd[RED];
+      Green=spd[GREEN];
+      Blue=spd[BLUE];
+      for(byte i=0;i<3;++i)
+      {
+        spd[i]+=off[i];
+        if(spd[i]>255)
+         {
+          spd[i]=255;
+          off[i]=-off[i];
+         }
+         else if(spd[i]<0)
+         {
+          spd[i]=0;
+          off[i]=-off[i];
+         }
+      }
       previousMillis=currentMillis;
+    analogWrite(0,Red);
+    analogWrite(1,Green);
      }
+  }
   }
   else
   {
