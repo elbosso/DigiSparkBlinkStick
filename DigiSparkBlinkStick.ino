@@ -143,13 +143,17 @@ void loop() {
       if((c[RED][i]!=colors[RED][i])||((c[GREEN][i]!=colors[GREEN][i])||(c[BLUE][i]!=colors[BLUE][i])))
         doit=1;
     }
-    if(doit==1)
+//    if(doit==1)
     {
       for(int i=0;i<PIXEL_COUNT;++i)
       {
         send(c[RED][i],c[GREEN][i],c[BLUE][i]);
         for(int j=0;j<3;++j)
           colors[j][i]=c[j][i];
+//        sendPause();  
+//    PORTB=0b00000000;
+//    __builtin_avr_delay_cycles ((((F_CPU / 1e9) * 1000*50) + 0.5) - 2);
+delay(40);
       }
     }
   }  
