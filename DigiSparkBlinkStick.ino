@@ -142,12 +142,14 @@ void loop() {
     }
     if(doit==1)
     {
+      cli();
       for(int i=0;i<PIXEL_COUNT;++i)
       {
         send(c[RED][i],c[GREEN][i],c[BLUE][i]);
         for(int j=0;j<3;++j)
           colors[j][i]=c[j][i];
       }
+      sei();
     }
   }  
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
