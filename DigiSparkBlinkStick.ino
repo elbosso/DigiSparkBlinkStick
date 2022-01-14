@@ -31,8 +31,11 @@ byte lastcycle=0;
 
 short int off[3];
 short int spd[3];
+short int coff[3];
+short int cspd[3];
 
 byte expectedstringlength;
+byte continuous=0;
 
 // Declare our NeoPixel strip object:
 //Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -61,6 +64,9 @@ void setup() {
     off[RED]=3;
   off[GREEN]=5;
   off[BLUE]=7;
+  coff[RED]=3;
+  coff[GREEN]=5;
+  coff[BLUE]=7;
 
 }
 
@@ -85,6 +91,7 @@ void reset()
   cycles=3;
   currentcycle=-1;
   cyclepause=1000;
+  continuous=0;
 }
 
 // the loop routine runs over and over again forever:
@@ -95,6 +102,27 @@ void loop() {
   manage_blink();
 
     short int c[3][PIXEL_COUNT];
+     unsigned long currentMillis = millis();
+//     if (currentMillis - previousMillis >= blink_on)
+      if(currentMillis%2==0)
+     { 
+      for(byte i=0;i<3;++i)
+      {
+        cspd[i]+=coff[i];
+        if(cspd[i]>360)
+         {
+          cspd[i]=360;
+          coff[i]=-coff[i];
+         }
+         else if(cspd[i]<0)
+         {
+          cspd[i]=0;
+          coff[i]=-coff[i];
+         }
+      }
+//      previousMillis=currentMillis;
+     }
+
   if((cycle==1)||(lastcycle==1))
   {
     if(cycle==0)
@@ -106,7 +134,6 @@ void loop() {
     }
       else
       {
-     unsigned long currentMillis = millis();
      if (currentMillis - previousMillis >= blink_on)
      { 
     for(int i=0;i<PIXEL_COUNT;++i)
@@ -157,14 +184,32 @@ void loop() {
       if((c[RED][i]!=colors[RED][i])||((c[GREEN][i]!=colors[GREEN][i])||(c[BLUE][i]!=colors[BLUE][i])))
         doit=1;
     }
-    if(doit==1)
+//    if(doit==1)
     {
+      if(continuous)
+      {
+      for(int i=0;i<PIXEL_COUNT;++i)
+      {
+        int v=i<PIXEL_COUNT/2?i*2*255/PIXEL_COUNT:(PIXEL_COUNT-1-i)*2*255/PIXEL_COUNT;
+        int o=cspd[RED]*PIXEL_COUNT/360;
+        o=(o+i)%PIXEL_COUNT;
+        c[RED][o]=v;
+        o=cspd[GREEN]*PIXEL_COUNT/360;
+        o=(o+i)%PIXEL_COUNT;
+        c[GREEN][o]=v;
+        o=cspd[BLUE]*PIXEL_COUNT/360;
+        o=(o+i)%PIXEL_COUNT;
+        c[BLUE][o]=v;
+      }
+    }
+cli();
       for(int i=0;i<PIXEL_COUNT;++i)
       {
         send(c[RED][i],c[GREEN][i],c[BLUE][i]);
         for(int j=0;j<3;++j)
           colors[j][i]=c[j][i];
       }
+      sei();
     }
   }  
    SerialUSB.refresh();               // keep usb alive // can alos use SerialUSB.refresh();
@@ -269,28 +314,35 @@ void command_interpreter()
     case 0:
     {
       if((input!='c')&&(input!='r'))
+      {
         cycle=0;
+        continuous=0;
+      }
       if((input == '#')||(input == '+'))
       {
         mode=1;
+        continuous=0;
       }
       else if((input == '*')||(input == '!'))
       {
        mode=2;
         expectedstringlength=11;
         theIndex=0;
+        continuous=0;
       }
       else if(input == 'n')
       {
        mode=3;
         expectedstringlength=4;
         theIndex=0;
+        continuous=0;
       }
       else if(input == 'f')
       {
        mode=4;
         expectedstringlength=4;
         theIndex=0;
+        continuous=0;
       }
       else if(input == 'r')
       {
@@ -299,38 +351,50 @@ void command_interpreter()
       else if(input == 'c')
       {
         cycle=1;
+        continuous=0;
       }
       else if(input == 'p')
       {
         mode=5;
         expectedstringlength=4;
         theIndex=0;
+        continuous=0;
       }
       else if(input == 'u')
       {
         repetitions=-1;
         currentrepetition=-1;
+        continuous=0;
       }
       else if(input == 'P')
       {
        mode=6;
         expectedstringlength=4;
         theIndex=0;
+        continuous=0;
       }
       else if(input == 'U')
       {
        cycles=-1;
         currentcycle=-1;
+        continuous=0;
       }
       if((input == '+')||(input == '!'))
       {
        blink=1;
         currentrepetition=repetitions;
         currentcycle=cycles;
+        continuous=0;
       }
       else if((input == '#')||(input == '*'))
       {
         blink=0;
+        continuous=0;
+      }
+      else if(input == 'M')
+      {
+        blink=0;
+        continuous=1;
       }
       break;
     }

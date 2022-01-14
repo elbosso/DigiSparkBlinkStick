@@ -42,6 +42,8 @@ elif [ "$color" = "chartreuse" ]; then
 	color="*208,045,000"
 elif [ "$color" = "lime" ]; then 
 	color="*255,165,000"
+elif [ "$color" = "cont" ]; then 
+	color="M"
 fi
 grep -o . <<< "$color"|while read letter;
 do 
