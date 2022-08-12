@@ -7,8 +7,8 @@ SCRIPTPATH=$(dirname "$SCRIPT")
 
 host=mqtt.pi-docker.lab
 port=1883
-topicpattern=home/blinkstick/#
-
+topicpattern="home/blinkstick/#"
+gracePeriodInSeconds=120
 
 while :
 do
@@ -20,29 +20,33 @@ msg=$(mosquitto_sub -h "$host" -p "$port" -t "$topicpattern" -v -C 1)
 #user=mosquitto
 #password=password
 #msg=$(mosquitto_sub -h "$host" -p "$port" -t "$topicpattern" -u "$user" -P "$password" -v -C 1)
-echo "Message: $msg"
-topic=$(echo -n "$msg" | cut -d ' ' -f 1)
-lastpart=$(echo -n "$topic" |rev |cut -d '/' -f 1|rev) 
-payload=$(echo -n "$msg" | cut -d ' ' -f 2)
-echo "Topic: $topic"
-echo "Topic (last part): $lastpart"
-echo "Payload: $payload"
-
-if [ "$lastpart" = "OK" ]; then 
-	payload="green"
-elif [ "$lastpart" = "warning" ]; then 
-	payload="yellow"
-elif [ "$lastpart" = "error" ]; then 
-	payload="red"
-elif [ "$lastpart" = "OFF" ]; then 
-	payload="off"
-elif [ "$lastpart" = "raw" ]; then 
-	payload="$payload"
+if [ $? -ne 0 ]; then
+  sleep $gracePeriodInSeconds
 else
-	payload="xxxx"
-fi
+  echo "Message: $msg"
+  topic=$(echo -n "$msg" | cut -d ' ' -f 1)
+  lastpart=$(echo -n "$topic" |rev |cut -d '/' -f 1|rev) 
+  payload=$(echo -n "$msg" | cut -d ' ' -f 2)
+  echo "Topic: $topic"
+  echo "Topic (last part): $lastpart"
+  echo "Payload: $payload"
 
-if [ "$payload" != "xxxx" ]; then 
+  if [ "$lastpart" = "OK" ]; then 
+	payload="green"
+  elif [ "$lastpart" = "warning" ]; then 
+	payload="yellow"
+  elif [ "$lastpart" = "error" ]; then 
+	payload="red"
+  elif [ "$lastpart" = "OFF" ]; then 
+	payload="off"
+  elif [ "$lastpart" = "raw" ]; then 
+	payload="$payload"
+  else
+	payload="xxxx"
+  fi
+
+  if [ "$payload" != "xxxx" ]; then 
 	"$SCRIPTPATH/digispark_rgb_led.sh" "$payload"
+  fi
 fi
 done
