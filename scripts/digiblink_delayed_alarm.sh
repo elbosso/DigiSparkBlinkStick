@@ -12,5 +12,5 @@ if [ -z "$DELAY" ]; then
 echo "cancelled"
 else
 echo "$DELAY"
-echo 'mosquitto_pub -h "$host" -p "$port" -t "$topicpattern" -i $(tr -dc A-Za-z0-9 </dev/urandom | head -c 13) -m "+5"' |at now +"$DELAY" min
+echo "mosquitto_pub -h $host -p $port -t $topicpattern -i $(tr -dc A-Za-z0-9 </dev/urandom | head -c 13) -m '+5'" |at now +"$DELAY" min
 fi
