@@ -59,3 +59,4 @@ case "$CHOICE" in
 esac
 fi
 
+clear
